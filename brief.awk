@@ -4,7 +4,7 @@
 #
 # Data
 #
-# 1. item type, one of {airbase, tanker, aew, atc, tacom, waypoint}
+# 1. item type, one of {airbase, tanker, aew, com, waypoint}
 # 2. item id
 # 3. argument format:
 #   /com:[1-3][0-9][0-9].[0-9][05]/ radio comms
@@ -16,9 +16,10 @@
 #   /elv:123(ft)?/                  elevation
 #
 # Example:
-# airbase,Rota Intl   ,wpt:5
-# airbase,Andersen AFB,wpt:7
-# tanker ,Shell-1-1   ,     ,tcn:12Y,com:253.00
+# airbase , Rota Intl   , wpt:5
+# airbase , Andersen AFB, wpt:7
+# tanker  , Shell-1-1   ,     ,tcn:12Y,com:253.00
+
 
 function error( s ) {
 	print "[ERROR][line " NR "] " s > "/dev/stderr"
@@ -58,12 +59,8 @@ function has_tanker() {
 	return has_type( TYPE_TANKER )
 }
 
-function has_atc() {
-	return has_type( TYPE_ATC )
-}
-
-function has_tacom() {
-	return has_type( TYPE_TACOM )
+function has_com() {
+	return has_type( TYPE_COM )
 }
 
 function has_waypoint() {
@@ -175,11 +172,14 @@ function format_rwy( rid, brg, il1, il2,      id1, id2, dir1, dir2 ) {
 }
 
 function format_vor( vor ) {
-	return sprintf( "%6.2f", vor )
+	if( vor ) {
+		return sprintf( "%6.2f", vor )
+	}
+	return ""
 }
 
 function format_airbase( name, wpt, pos, elv, tcn, vor, rid, brg, il1, il2 ) {
-	return name "&" format_lat( pos ) "&" format_long( pos ) "&" elv " ft&" format_rwy( rid, brg, il1, il2 ) "&" format_vor( vor ) "&" tcn "\\\\"
+	return name "&" format_lat( pos ) "&" format_long( pos ) "&" format_elev( elv ) "&" format_rwy( rid, brg, il1, il2 ) "&" format_vor( vor ) "&" tcn "\\\\"
 }
 
 function format_tanker( name, com, tcn ) {
@@ -188,22 +188,21 @@ function format_tanker( name, com, tcn ) {
 
 function format_com( name, com ) {
 	return sprintf( "%s&%6.2f\\\\", name, com )
-}	
+}
+
+function format_elev( elv ) {
+	if( elv ) {
+		return sprintf( "%d ft", elv )
+	}
+	return ""
+}
 
 function format_aew( name, com ) {
 	return format_com( name, com )
 }
 
-function format_atc() {
-	return format_com( name, com )
-}
-
-function format_tacom() {
-	return format_com( name, com )
-}
-
-function format_waypoint( name, pos, elv ) {
-	return sprintf( "%s&%s&%s&%s\\\\", name, format_lat( pos ), format_long( pos ), elv ? elv : "" )
+function format_waypoint( idx, name, pos, elv ) {
+	return sprintf( "%d&%s&%s&%s&%s\\\\", idx, name, format_lat( pos ), format_long( pos ), format_elev( elv ) )
 }
 
 function format_airbase_idx( i ) {
@@ -218,16 +217,11 @@ function format_aew_idx( i ) {
 	return format_aew( obj[i][NAME], obj[i][COM] )
 }
 
-function format_atc_idx( i ) {
-	return format_atc( obj[i][NAME], obj[i][COM] )
-}
-
-function format_tacom_idx( i ) {
-	return format_tacom( obj[i][NAME], obj[i][COM] )
+function format_com_idx( i ) {
+	return format_com( obj[i][NAME], obj[i][COM] )
 }
 
 function format_waypoint_idx( i ) {
-	return format_waypoint( obj[i][NAME], obj[i][POS], obj[i][ELV] )
 }
 
 function format_obj_idx( i ) {
@@ -240,14 +234,8 @@ function format_obj_idx( i ) {
 	if( obj[i][TYPE] == TYPE_AEW ) {
 		return format_aew_idx( i )
 	}
-	if( obj[i][TYPE] == TYPE_ATC ) {
-		return format_atc_idx( i )
-	}
-	if( obj[i][TYPE] == TYPE_TACOM ) {
-		return format_tacom_idx( i )
-	}
-	if( obj[i][TYPE] == TYPE_WAYPOINT ) {
-		return format_waypoint_idx( i )
+	if( obj[i][TYPE] == TYPE_COM ) {
+		return format_com_idx( i )
 	}
 	error( "object type not recognized: " obj[i][TYPE] )
 }
@@ -256,7 +244,13 @@ function print_obj_idx( i ) {
 	print format_obj_idx( i )
 }
 
-function print_all( type ) {
+function print_all( type,       i ) {
+
+	if( type == TYPE_WAYPOINT ) {
+		print_all_waypoints()
+		return
+	}
+		
 	for( i in obj ) {
 		
 		if( obj[i][TYPE] != type ) {
@@ -266,6 +260,31 @@ function print_all( type ) {
 		print_obj_idx( i )
 	}
 }
+
+function waypoint_index( j,       i ) {
+	for( i in obj ) {
+		if( !( obj[i][TYPE] == TYPE_AIRBASE || obj[i][TYPE] == TYPE_WAYPOINT ) ) {
+			continue
+		}
+		if( obj[i][WPT] == j ) {
+			return i
+		}
+	}
+	return 0
+}
+
+function print_all_waypoints(      i, j ) {
+	for( j = 0; j < 128; ++j ) {
+		i = waypoint_index( j )
+		if( !i ) {
+			continue
+		}
+		print format_waypoint( j, obj[i][NAME], obj[i][POS], obj[i][ELV] )
+	}		
+}
+		
+	
+		
 
 BEGIN {
 	OFMT = "%.2f"
@@ -277,14 +296,15 @@ BEGIN {
 	idx = 0
 
 	TYPE_TITLE    = "title"
+	TYPE_DATE     = "date"
+	TYPE_GROUP    = "group"
 	TYPE_AIRBASE  = "airbase"
 	TYPE_TANKER   = "tanker"
 	TYPE_AEW      = "aew"
-	TYPE_ATC      = "atc"
-	TYPE_TACOM    = "tacom"
+	TYPE_COM      = "com"
 	TYPE_WAYPOINT = "waypoint"
 
-	PATTERN_WPT  = "wpt:([1-9])"
+	PATTERN_WPT  = "wpt:([1-9][0-9]*)"
 	PATTERN_COM  = "com:([1-3][0-9][0-9].[0-9][05])"
 	PATTERN_TCN  = "tcn:(([0-2]?[0-9])?[0-9][XY])"
 	PATTERN_POS  = "pos:([NS][0-8][0-9]o[0-9][0-9]\\.[0-9][0-9][0-9]'\\|[EW][01][0-9][0-9]o[0-9][0-9]\\.[0-9][0-9][0-9]')"
@@ -375,8 +395,11 @@ BEGIN {
 	# SYRIA
 	# ------------------------------------------------------------
 
-	ASSAD = "Bassel Al-Assad"
-	HATAI = "Hatai"
+	ASSAD    = "Bassel Al-Assad"
+	HATAI    = "Hatai"
+	RAMAT    = "Ramat David"
+	HERZLIYA = "Herzliya"
+	
 	
 	# Bassel Al-Assad
 	airbase[ASSAD, POS] = "N35o24.695'|E035o57.001'"
@@ -393,6 +416,21 @@ BEGIN {
 	airbase[HATAI, RID] = 4
 	airbase[HATAI, BRG] = 39
 	airbase[HATAI, IL1] = 108.90
+
+	# Ramat David
+	airbase[RAMAT, POS] = "N32o40.441'|E035o10.687'"
+	airbase[RAMAT, ELV] = 132
+	airbase[RAMAT, VOR] = 113.70
+	airbase[RAMAT, TCN] = "84X"
+	airbase[RAMAT, RID] = 15
+	airbase[RAMAT, BRG] = 142
+	airbase[RAMAT, IL2] = 111.10
+
+	# Herzliya
+	airbase[HERZLIYA, POS] = "N32o10.713'|E034o50.387'"
+	airbase[HERZLIYA, ELV] = 118
+	airbase[HERZLIYA, RID] = 10
+	airbase[HERZLIYA, BRG] = 106
 }
 
 # skip comment line
@@ -411,17 +449,28 @@ $1 == "" { next }
 # check type is valid
 
 !( $1 == TYPE_TITLE   ||
+   $1 == TYPE_DATE    ||
+   $1 == TYPE_GROUP   ||
    $1 == TYPE_AIRBASE ||
    $1 == TYPE_TANKER  ||
    $1 == TYPE_AEW     ||
-   $1 == TYPE_ATC     ||
-   $1 == TYPE_TACOM   ||
+   $1 == TYPE_COM     ||
    $1 == TYPE_WAYPOINT ) {
 	error( "type field not recognized: " $1 )
 }
 
 $1 == TYPE_TITLE {
 	meta[TYPE_TITLE] = $2
+	next
+}
+
+$1 == TYPE_DATE {
+	meta[TYPE_DATE] = $2
+	next
+}
+
+$1 == TYPE_GROUP {
+	meta[TYPE_GROUP] = $2
 	next
 }
 
@@ -438,7 +487,7 @@ $1 == TYPE_TITLE {
 
 # if type is airbase then load airbase info
 
-$1 == TYPE_AIRBASE {
+$1 == TYPE_AIRBASE || $1 == TYPE_WAYPOINT {
 	obj[idx][TCN] = airbase[obj[idx][NAME], TCN]
 	obj[idx][POS] = airbase[obj[idx][NAME], POS]
 	obj[idx][ELV] = airbase[obj[idx][NAME], ELV]
@@ -501,18 +550,24 @@ END {
 	print ""
 	print "\\usepackage[margin=3em]{geometry}"
 	print ""
+	print "\\pagenumbering{gobble}"
+	print ""
 	print "\\title{" meta[TYPE_TITLE] "}"
-	print "\\author{}"
-	print "\\date{}"
+	print "\\author{" meta[TYPE_GROUP] "}"
+	print "\\date{" meta[TYPE_DATE] "}"
 	print ""
 	print "\\begin{document}"
 	print ""
 	print "\\maketitle"
 
 	# communication
-	if( has_atc() || has_tacom() ) {
+	if( has_com() ) {
 		print ""
 		print "\\section*{Communication}"
+		print "\\begin{tabular}{lr}"
+		print "\\textbf{name}&\\textbf{com}\\\\"
+		print_all( TYPE_COM )
+		print "\\end{tabular}"
 	}
 		
 	# airbases
@@ -520,7 +575,7 @@ END {
 		print ""
 		print "\\section*{Airbases}"
 		print ""
-		print "\\begin{tabular}{lllrrrl}"
+		print "\\begin{tabular}{lllrlrr}"
 		print "\\textbf{name}&\\textbf{latitude}&\\textbf{longitude}&\\textbf{elev.}&\\textbf{rwy.}&\\textbf{VOR}&\\textbf{TACAN}\\\\"
 		print_all( TYPE_AIRBASE )
 		print "\\end{tabular}"
@@ -553,8 +608,8 @@ END {
 		print ""
 		print "\\section*{Flight Plan}"
 		print ""
-		print "\\begin{tabular}{lllr}"
-		print "\\textbf{name}&\\textbf{latitude}&\\textbf{longitude}&\\textbf{elev.}\\\\"
+		print "\\begin{tabular}{rlllr}"
+		print "\\textbf{id}&\\textbf{name}&\\textbf{latitude}&\\textbf{longitude}&\\textbf{elev.}\\\\"
 		print_all( TYPE_WAYPOINT )
 		print "\\end{tabular}"
 	}

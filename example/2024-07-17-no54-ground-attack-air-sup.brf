@@ -1,0 +1,22 @@
+# Meta Info
+title   , Ground Attack and Air Superiority
+date    , 2024-07-17
+group   , No.54 Squadron
+
+# Communication
+com     , Common Chan, com:288.00
+
+# Flight Plan
+airbase , Herzliya   , wpt:1
+airbase , Ramat David, wpt:2
+waypoint, WP1        , wpt:3 pos:N32o55.720'|E034o58.573'
+waypoint, WP2        , wpt:4 pos:N33o02.121'|E035o29.045'
+waypoint, Red Apple  , wpt:5 pos:N33o22.523'|E035o37.078'
+waypoint, WP4        , wpt:6 pos:N33o38.188'|E035o52.331'
+waypoint, Oscar      , wpt:7 pos:N33o54.605'|E036o07.678'
+waypoint, WP6        , wpt:8 pos:N33o45.749'|E035o54.028'
+waypoint, WP7        , wpt:9 pos:N34o06.953'|E035o12.456'
+waypoint, Ramat David, wpt:10
+
+# AWACS
+aew     , AWACS, com:251.00
