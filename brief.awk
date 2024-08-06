@@ -72,7 +72,7 @@ function get_name() {
 }
 
 function get_value( pattern ) {
-	match( $0, pattern, a )
+	match( $3, pattern, a )
 	return a[1]
 }
 
@@ -288,7 +288,7 @@ function print_all_waypoints(      i, j ) {
 
 BEGIN {
 	OFMT = "%.2f"
-	FS = ","
+	FS = "|"
 
 	true = 1
 	false = 0
@@ -303,6 +303,7 @@ BEGIN {
 	TYPE_AEW      = "aew"
 	TYPE_COM      = "com"
 	TYPE_WAYPOINT = "waypoint"
+	TYPE_BRIEF    = "brief"
 
 	PATTERN_WPT  = "wpt:([1-9][0-9]*)"
 	PATTERN_COM  = "com:([1-3][0-9][0-9].[0-9][05])"
@@ -455,8 +456,14 @@ $1 == "" { next }
    $1 == TYPE_TANKER  ||
    $1 == TYPE_AEW     ||
    $1 == TYPE_COM     ||
+   $1 == TYPE_BRIEF   ||
    $1 == TYPE_WAYPOINT ) {
 	error( "type field not recognized: " $1 )
+}
+
+$1 == TYPE_BRIEF {
+	meta[TYPE_BRIEF] = $2
+	next
 }
 
 $1 == TYPE_TITLE {
@@ -500,47 +507,47 @@ $1 == TYPE_AIRBASE || $1 == TYPE_WAYPOINT {
 
 # gather arguments
 
-$0 ~ PATTERN_WPT {
+$3 ~ PATTERN_WPT {
 	obj[idx][WPT] = get_value( PATTERN_WPT )
 }
 
-$0 ~ PATTERN_COM {
+$3 ~ PATTERN_COM {
 	obj[idx][COM] = get_value( PATTERN_COM )
 }
 
-$0 ~ PATTERN_TCN {
+$3 ~ PATTERN_TCN {
 	obj[idx][TCN] = get_value( PATTERN_TCN )
 }
 
-$0 ~ PATTERN_POS {
+$3 ~ PATTERN_POS {
 	obj[idx][POS] = get_value( PATTERN_POS )
 }
 
-$0 ~ PATTERN_ELV {
+$3 ~ PATTERN_ELV {
 	obj[idx][ELV] = get_value( PATTERN_ELV )
 }
 
-$0 ~ PATTERN_VOR {
+$3 ~ PATTERN_VOR {
 	obj[idx][VOR] = get_value( PATTERN_VOR )
 }
 
-$0 ~ PATTERN_BRG {
+$3 ~ PATTERN_BRG {
 	obj[idx][BRG] = get_value( PATTERN_BRG )
 }
 
-$0 ~ PATTERN_RID {
+$3 ~ PATTERN_RID {
 	obj[idx][RID] = get_value( PATTERN_RID )
 }
 
-$0 ~ PATTERN_IL1 {
+$3 ~ PATTERN_IL1 {
 	obj[idx][IL1] = get_value( PATTERN_IL1 )
 }
 
-$0 ~ PATTERN_IL2 {
+$3 ~ PATTERN_IL2 {
 	obj[idx][IL2] = get_value( PATTERN_IL2 )
 }
 
-$0 ~ PATTERN_SIDE {
+$3 ~ PATTERN_SIDE {
 	obj[idx][SIDE] = get_value( PATTERN_SIDE )
 }
 
@@ -559,6 +566,15 @@ END {
 	print "\\begin{document}"
 	print ""
 	print "\\maketitle"
+
+
+	
+    # briefing
+	if( meta[TYPE_BRIEF] ) {
+		print ""
+		print "\\noindent"
+		print meta[TYPE_BRIEF]
+	}
 
 	# communication
 	if( has_com() ) {
