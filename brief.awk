@@ -400,6 +400,7 @@ BEGIN {
 	HATAI    = "Hatai"
 	RAMAT    = "Ramat David"
 	HERZLIYA = "Herzliya"
+	DAMASCUS = "Damascus"
 	
 	
 	# Bassel Al-Assad
@@ -432,6 +433,14 @@ BEGIN {
 	airbase[HERZLIYA, ELV] = 118
 	airbase[HERZLIYA, RID] = 10
 	airbase[HERZLIYA, BRG] = 106
+
+	airbase[DAMASCUS, POS] = "N33o24.920'|E036o30.255'"
+	airbase[DAMASCUS, ELV] = 2007
+	airbase[DAMASCUS, VOR] = 116.00
+	airbase[DAMASCUS, RID] = 05
+	airbase[DAMASCUS, BRG] = 45
+	airbase[DAMASCUS, IL2] = 109.90
+	
 }
 
 # skip comment line

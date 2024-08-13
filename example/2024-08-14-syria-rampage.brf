@@ -1,0 +1,12 @@
+# Meta Info
+title | Syria Rampage
+date  | 2024-08-07
+group | No.54 Squadron
+brief | Last week No.54 Squadron flew a CAP mission north of lake Galilei and intercepted two bombers escorted by a MiG-23. In response, No.54 Squadron has been assigned to establish a no-fly zone over Golan. Operating from Ramat David, we equip an anti-air loadout and a centerline fuel tank pushing $040^{\circ}$ into Golan, located in Syria's south-west between lake Galilei and Damascus.
+
+com | Common Chan | com:288.00
+
+airbase | Ramat David
+airbase | Damascus
+tanker  | Texaco-1-1 (basket) | com:270.00MHz,tcn:11Y
+tanker  | Arco-1-1 (boom)     | com:268.00MHz,tcn:12Y
